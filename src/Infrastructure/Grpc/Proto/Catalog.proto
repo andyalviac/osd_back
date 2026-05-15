@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package catalog;
+
+import "Common.proto";
+
+// gRPC Service
+service Catalog {
+    rpc GetCatalogDetails (common.Request) returns (common.Response);
+    rpc GetCatalogData (common.Request) returns (common.Response);
+    rpc GetAllMasterCatalog (common.Empty) returns (common.Response);
+    rpc GetDetailCatalogById (common.Request) returns (common.Response);
+    rpc FindCatalogDetailById (common.Request) returns (common.Response);
+}

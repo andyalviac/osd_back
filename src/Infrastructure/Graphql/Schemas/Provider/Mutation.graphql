@@ -1,0 +1,9 @@
+type Mutation {
+    updateManagement(data: String!): Response
+    changeStatusManagement(data: String!): Response
+    saveManagementsByGroup(data: String!): Response
+    createContract(data: String!): Response
+    updateContract(data: String!): Response
+    deleteContract(data: String!): Response
+    updateContractStatus(data: String!): Response
+}

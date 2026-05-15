@@ -1,0 +1,11 @@
+type Query {
+    getAllManagements(data: String!): Response
+    getTypesForClient(data: String!): Response
+    getManagementById(data: String!): Response
+    getAllContracts(data: String!): Response
+    getContractById(data: String!): Response
+    getGroupsByClient(data: String!): Response
+    getUsersByGroup(data: String!): Response
+    getAllProvidersV2(data: String!): Response
+    getGroupsByClientV2: Response
+}

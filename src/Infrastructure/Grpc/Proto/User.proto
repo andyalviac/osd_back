@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package user;
+
+import "Common.proto";
+
+// gRPC Service
+service User {
+    rpc GetUserById (common.Request) returns (common.Response);
+    rpc GetUsersByClient (common.Request) returns (common.Response);
+}

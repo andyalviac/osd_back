@@ -1,0 +1,141 @@
+trigger:
+- Develop
+- main
+- Production
+
+pr:
+- Develop
+- main
+- Production
+
+resources:
+  repositories:
+  - repository: helmcharts
+    type: git
+    name: OSD_Develop/OSD_Provider_Charts
+
+variables:
+  imageRepository: 'provider'
+  dockerfilePath: 'Dockerfile'
+  vmImageName: 'ubuntu-latest'
+  MAJORMINOR_VERSION: "0.1"
+  acrConnection: 'osdcontappdevtest'
+
+stages:
+- stage: Build
+  displayName: Build and Publish Image
+
+  jobs:
+  - job: BuildImage
+    pool:
+      vmImage: $(vmImageName)
+
+    steps:
+    #(PR + Trigger + Manual)
+    - bash: |
+        echo "Branch: $(Build.SourceBranchName)"
+
+        if [ "$(Build.SourceBranchName)" = "Develop" ]; then
+          VERSION_TAG="dev"
+          PUSH_LATEST="true"
+        elif [ "$(Build.SourceBranchName)" = "main" ]; then
+          VERSION_TAG="alpha"
+          PUSH_LATEST="false"
+        elif [ "$(Build.SourceBranchName)" = "Production" ]; then
+          VERSION_TAG="release"
+          PUSH_LATEST="false"
+        else
+          echo "Skipping build"
+          echo "##vso[task.setvariable variable=SKIP_BUILD]true"
+          exit 0
+        fi
+
+        SHORT_SHA=$(echo $(Build.SourceVersion) | cut -c1-7)
+        FINAL_TAG=$(MAJORMINOR_VERSION).$(Build.BuildId).${SHORT_SHA}-${VERSION_TAG}.1
+
+        echo "Image tag: $FINAL_TAG"
+        echo "Push latest: $PUSH_LATEST"
+
+        echo "##vso[task.setvariable variable=IMAGE_TAG]$FINAL_TAG"
+        echo "##vso[task.setvariable variable=IMAGE_TAG;isOutput=true]$FINAL_TAG"
+        echo "##vso[task.setvariable variable=PUSH_LATEST]$PUSH_LATEST"
+      name: GenerateTag
+      displayName: Generate Tag
+
+    - task: Docker@2
+      displayName: Build and Push Versioned Image
+      condition: ne(variables.SKIP_BUILD, 'true')
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(acrConnection)
+        tags: |
+          $(IMAGE_TAG)
+
+    - task: Docker@2
+      displayName: Push Latest Tag (Develop only)
+      condition: and(ne(variables.SKIP_BUILD, 'true'), eq(variables.PUSH_LATEST, 'true'))
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(acrConnection)
+        tags: |
+          latest
+
+- stage: UpdateHelmChart
+  displayName: Update Helm Chart Values
+  dependsOn: Build
+  condition: and(succeeded(), or(eq(variables['Build.SourceBranchName'], 'Develop'), eq(variables['Build.SourceBranchName'], 'main')))
+
+  jobs:
+  - job: UpdateHelmValues
+    pool:
+      vmImage: $(vmImageName)
+
+    variables:
+      IMAGE_TAG: $[ stageDependencies.Build.BuildImage.outputs['GenerateTag.IMAGE_TAG'] ]
+
+    steps:
+    - checkout: helmcharts
+      path: 'helm-charts'
+      persistCredentials: true
+      fetchDepth: 0
+      displayName: Checkout Helm Chart Repository
+
+    - bash: |
+        echo "Image tag to use: $(IMAGE_TAG)"
+        
+        cd $(Build.SourcesDirectory)/helm-charts
+        
+        TARGET_BRANCH="$(Build.SourceBranchName)"
+        
+        if [ "$TARGET_BRANCH" = "Develop" ]; then
+          TARGET_VALUES_FILE="values-images-dev.yaml"
+          echo "Updating: values-images-dev.yaml (Develop branch)"
+        elif [ "$TARGET_BRANCH" = "main" ]; then
+          TARGET_VALUES_FILE="values-images-qa.yaml"
+          echo "Updating: values-images-qa.yaml (main branch)"
+        else
+          echo "No values file configured for this branch. Skipping update."
+          exit 0
+        fi
+        
+        git fetch origin
+        git checkout main
+        
+        sed -i "s|^\([[:space:]]*containerProvider:[[:space:]]*\).*$|\1$(IMAGE_TAG)|" "$TARGET_VALUES_FILE"
+        
+        echo "✅ Updated preview:"
+        grep -A2 "containerProvider:" "$TARGET_VALUES_FILE"
+        
+        git config --global user.name "Azure Pipelines"
+        git config --global user.email "azuredevops@noreply.com"
+        
+        git add "$TARGET_VALUES_FILE"
+        git commit -m "chore: Auto-update containerProvider to $(IMAGE_TAG) [skip ci]" || echo "No changes to commit"
+        
+        git push origin main
+        echo "✅ Successfully pushed update to main branch"
+      displayName: Update values file and push changes

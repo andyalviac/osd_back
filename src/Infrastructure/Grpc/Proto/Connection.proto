@@ -1,0 +1,11 @@
+syntax = "proto3";
+ 
+package connection;
+ 
+import "Common.proto";
+ 
+// gRPC Service
+service Connection {
+    rpc GetAllProviders (common.Empty) returns (common.Response);
+    rpc GetAllProvidersByIds (common.Request) returns (common.Response);
+}

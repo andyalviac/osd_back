@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package Provider;
+
+import "Common.proto";
+
+
+service Provider {
+    rpc GetAllProvidersByGroup (common.Request) returns (common.Response);
+    rpc GetProviderGroupsByIds (common.Request) returns (common.Response);
+    rpc GetProviderGroupsByClient (common.Request) returns (common.Response);
+}
+
+
+

@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package location;
+
+import "Common.proto";
+
+// gRPC Service
+service Location {
+    rpc GetLocationDataById (common.Request) returns (common.Response);
+}
