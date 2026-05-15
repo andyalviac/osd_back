@@ -18,7 +18,7 @@ __pycache__/
 # Ignorar dependencias instaladas
 site/
 dist/
-build/
+build/ 
 
 # Ignorar archivos de configuración de IDEs y editores
 .vscode/
