@@ -1,0 +1,31 @@
+# Ignorar entornos virtuales
+venv/
+.env
+.env.*
+*.venv/
+Pipfile
+Pipfile.lock
+
+# Ignorar caché de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignorar archivos de logs
+*.log
+
+# Ignorar dependencias instaladas
+site/
+dist/
+build/
+
+# Ignorar archivos de configuración de IDEs y editores
+.vscode/
+.idea/
+*.swp
+
+
+# Ignorar archivos de configuración de Docker
+*.yml   
+*-pipelines.yml

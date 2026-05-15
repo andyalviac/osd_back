@@ -9,12 +9,7 @@ from src.Application.UseCases.Grpc.ProviderUseCase import (
 class ApplicationServices:
 
     def __init__(self, container: Container):
-        self._audit = None
-        self._catalog = None
         self._provider = None
-        self._i_form = None
-        self._grpc_catalog = None
-        self._grpc_i_form = None
         self._grpc_provider = None
         self.container = container
 

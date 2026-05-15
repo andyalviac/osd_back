@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from ariadne.asgi import GraphQL
 from src.Infrastructure.Graphql import schema
@@ -9,9 +9,7 @@ from ariadne.asgi.handlers import GraphQLHTTPHandler
 
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from src.Infrastructure.Bootstrap.Container import Container
-from src.Application.Services.ApplicationServices import ApplicationServices
 
-from Osdental.Graphql.Models import BaseGraphQLContext
 import asyncio
 
 from src.Infrastructure.Config.Settings import settings
@@ -27,16 +25,13 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # grpc_task = asyncio.create_task(serve())
+
     print("Starting up...")
     await Container.startup()
     app.state.container = Container
     app.state.aes_auth = Container.config.aes_key_auth
     app.state.aes_user = Container.config.aes_key_user
 
-    print("app.state.container:", app.state.container)
-    print("app.state.aes_auth:", app.state.aes_auth)
-    print("app.state.aes_user:", app.state.aes_user)
     # Audit Config
     audit_config = AuditConfig(
         environment=settings.environment,
@@ -64,7 +59,7 @@ async def lifespan(app: FastAPI):
     finally:
         grpc_task.cancel()
         try:
-            print("nothing")
+
             await grpc_task
         except asyncio.CancelledError:
             logger.debug("gRPC server stopped")
